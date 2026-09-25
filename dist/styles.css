@@ -614,7 +614,8 @@ tr:focus-visible {
 }
 
 .station-coordinates b {
-  width: 27px;
+  width: 32px;
+  flex: none;
   color: var(--mint);
   font-size: 0.58rem;
   font-weight: 800;

@@ -1,16 +1,16 @@
 let stations = [
-  { id: "KDCA", name: "Washington National", state: "DC", source: "NOAA", lat: 38.8521, lon: -77.0377, gauge: true, rain: { 6: 0.18, 12: 0.42, 24: 0.86, 48: 1.24, 72: 1.51 } },
-  { id: "KIAD", name: "Dulles International", state: "VA", source: "NOAA", lat: 38.9349, lon: -77.4473, gauge: true, rain: { 6: 0.09, 12: 0.31, 24: 0.64, 48: 0.91, 72: 1.17 } },
-  { id: "KBWI", name: "Baltimore / Washington", state: "MD", source: "NOAA", lat: 39.1733, lon: -76.684, gauge: true, rain: { 6: 0.26, 12: 0.58, 24: 1.12, 48: 1.47, 72: 1.72 } },
-  { id: "KRIC", name: "Richmond International", state: "VA", source: "NOAA", lat: 37.5052, lon: -77.3197, gauge: true, rain: { 6: 0.04, 12: 0.16, 24: 0.37, 48: 0.62, 72: 0.77 } },
-  { id: "KCHO", name: "Charlottesville–Albemarle", state: "VA", source: "NOAA", lat: 38.1386, lon: -78.4529, gauge: true, rain: { 6: 0.0, 12: 0.08, 24: 0.21, 48: 0.54, 72: 0.69 } },
-  { id: "KROA", name: "Roanoke Regional", state: "VA", source: "NOAA", lat: 37.3169, lon: -79.9741, gauge: true, rain: { 6: 0.0, 12: 0.02, 24: 0.14, 48: 0.28, 72: 0.41 } },
-  { id: "KORF", name: "Norfolk International", state: "VA", source: "NOAA", lat: 36.8946, lon: -76.2012, gauge: true, rain: { 6: 0.41, 12: 0.77, 24: 1.38, 48: 1.83, 72: 2.14 } },
-  { id: "KSBY", name: "Salisbury Regional", state: "MD", source: "NOAA", lat: 38.3405, lon: -75.5103, gauge: true, rain: { 6: 0.33, 12: 0.69, 24: 1.04, 48: 1.66, 72: 1.98 } },
-  { id: "KLYH", name: "Lynchburg Regional", state: "VA", source: "NOAA", lat: 37.3267, lon: -79.2004, gauge: true, rain: { 6: 0.0, 12: 0.05, 24: 0.18, 48: 0.39, 72: 0.48 } },
-  { id: "KMRB", name: "Eastern WV Regional", state: "WV", source: "NOAA", lat: 39.4019, lon: -77.9846, gauge: true, rain: { 6: 0.12, 12: 0.25, 24: 0.51, 48: 0.82, 72: 1.04 } },
-  { id: "KNYG", name: "Quantico Marine Corps", state: "VA", source: "NOAA", lat: 38.5036, lon: -77.305, gauge: false, rain: { 6: null, 12: null, 24: null, 48: null, 72: null } },
-  { id: "KHEF", name: "Manassas Regional", state: "VA", source: "NOAA", lat: 38.7214, lon: -77.5154, gauge: false, rain: { 6: null, 12: null, 24: null, 48: null, 72: null } },
+  { id: "KDCA", name: "Washington National", state: "DC", source: "NOAA", lat: 38.8521, lon: -77.0377, elevationFt: 15, gauge: true, rain: { 6: 0.18, 12: 0.42, 24: 0.86, 48: 1.24, 72: 1.51 } },
+  { id: "KIAD", name: "Dulles International", state: "VA", source: "NOAA", lat: 38.9349, lon: -77.4473, elevationFt: 312, gauge: true, rain: { 6: 0.09, 12: 0.31, 24: 0.64, 48: 0.91, 72: 1.17 } },
+  { id: "KBWI", name: "Baltimore / Washington", state: "MD", source: "NOAA", lat: 39.1733, lon: -76.684, elevationFt: 143, gauge: true, rain: { 6: 0.26, 12: 0.58, 24: 1.12, 48: 1.47, 72: 1.72 } },
+  { id: "KRIC", name: "Richmond International", state: "VA", source: "NOAA", lat: 37.5052, lon: -77.3197, elevationFt: 167, gauge: true, rain: { 6: 0.04, 12: 0.16, 24: 0.37, 48: 0.62, 72: 0.77 } },
+  { id: "KCHO", name: "Charlottesville–Albemarle", state: "VA", source: "NOAA", lat: 38.1386, lon: -78.4529, elevationFt: 640, gauge: true, rain: { 6: 0.0, 12: 0.08, 24: 0.21, 48: 0.54, 72: 0.69 } },
+  { id: "KROA", name: "Roanoke Regional", state: "VA", source: "NOAA", lat: 37.3169, lon: -79.9741, elevationFt: 1175, gauge: true, rain: { 6: 0.0, 12: 0.02, 24: 0.14, 48: 0.28, 72: 0.41 } },
+  { id: "KORF", name: "Norfolk International", state: "VA", source: "NOAA", lat: 36.8946, lon: -76.2012, elevationFt: 27, gauge: true, rain: { 6: 0.41, 12: 0.77, 24: 1.38, 48: 1.83, 72: 2.14 } },
+  { id: "KSBY", name: "Salisbury Regional", state: "MD", source: "NOAA", lat: 38.3405, lon: -75.5103, elevationFt: 52, gauge: true, rain: { 6: 0.33, 12: 0.69, 24: 1.04, 48: 1.66, 72: 1.98 } },
+  { id: "KLYH", name: "Lynchburg Regional", state: "VA", source: "NOAA", lat: 37.3267, lon: -79.2004, elevationFt: 938, gauge: true, rain: { 6: 0.0, 12: 0.05, 24: 0.18, 48: 0.39, 72: 0.48 } },
+  { id: "KMRB", name: "Eastern WV Regional", state: "WV", source: "NOAA", lat: 39.4019, lon: -77.9846, elevationFt: 565, gauge: true, rain: { 6: 0.12, 12: 0.25, 24: 0.51, 48: 0.82, 72: 1.04 } },
+  { id: "KNYG", name: "Quantico Marine Corps", state: "VA", source: "NOAA", lat: 38.5036, lon: -77.305, elevationFt: 10, gauge: false, rain: { 6: null, 12: null, 24: null, 48: null, 72: null } },
+  { id: "KHEF", name: "Manassas Regional", state: "VA", source: "NOAA", lat: 38.7214, lon: -77.5154, elevationFt: 192, gauge: false, rain: { 6: null, 12: null, 24: null, 48: null, 72: null } },
 ];
 
 const state = {
@@ -143,6 +143,7 @@ async function fetchNearbyStationCandidates(center, radiusMiles) {
           source: "NOAA",
           lat,
           lon,
+          elevationFt: convertElevationToFeet(feature.properties?.elevation),
           distanceMiles: miles,
           gauge: false,
           rain: { 6: null, 12: null, 24: null, 48: null, 72: null },
@@ -190,6 +191,7 @@ async function fetchPwsCandidates(center, radiusMiles, stateCodes) {
         network: "CWOP",
         lat,
         lon,
+        elevationFt: convertElevationToFeet(properties.elevation),
         distanceMiles: miles,
         gauge: false,
         rain: { 6: null, 12: null, 24: null, 48: null, 72: null },
@@ -216,6 +218,19 @@ function levelForRain(value) {
 
 function formatRain(value) {
   return value == null ? "—" : value.toFixed(2);
+}
+
+function convertElevationToFeet(quantitativeValue) {
+  const value = Number(quantitativeValue?.value);
+  if (!Number.isFinite(value)) return null;
+  const unit = `${quantitativeValue?.unitCode || ""}`.toLowerCase();
+  if (unit.endsWith(":m")) return Math.round(value * 3.28084);
+  if (unit.endsWith(":ft") || unit.includes("foot")) return Math.round(value);
+  return null;
+}
+
+function formatElevation(value) {
+  return Number.isFinite(value) ? `${Math.round(value).toLocaleString("en-US")} ft` : "Unavailable";
 }
 
 function nwsTimeSeriesUrl(stationId) {
@@ -520,9 +535,10 @@ function renderCard() {
       <div>
         <p>${station.state} · ${station.source === "PWS" ? "Personal station · CWOP" : station.gauge ? "NOAA rain gauge reporting" : "No recent rain gauge data"}</p>
         <h2>${station.name}</h2>
-        <div class="station-coordinates" aria-label="Station coordinates">
+        <div class="station-coordinates" aria-label="Station coordinates and elevation">
           <span><b>DD</b><code>${coordinates.dd}</code></span>
           <span><b>DMS</b><code>${coordinates.dms}</code></span>
+          <span><b>ELEV</b><code>${formatElevation(station.elevationFt)}</code></span>
         </div>
       </div>
       <span class="station-card-id">${station.id}</span>
