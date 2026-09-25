@@ -20,6 +20,8 @@ const state = {
   sortBy: "24",
   radiusMiles: 50,
   showPws: false,
+  dataMode: "sample",
+  areaSearchActive: false,
 };
 
 const PWS_RADIUS_MILES = 25;
@@ -28,6 +30,9 @@ const sampleStations = structuredClone(stations);
 
 const map = L.map("map", {
   zoomControl: true,
+  scrollWheelZoom: "center",
+  doubleClickZoom: "center",
+  touchZoom: "center",
   attributionControl: true,
   minZoom: 5,
   preferCanvas: true,
@@ -73,6 +78,11 @@ function updateSearchGeometry() {
   const latitude = `${Math.abs(center.lat).toFixed(2)}° ${center.lat >= 0 ? "N" : "S"}`;
   const longitude = `${Math.abs(center.lng).toFixed(2)}° ${center.lng >= 0 ? "E" : "W"}`;
   centerLabel.textContent = `${latitude}, ${longitude} · ${state.radiusMiles} mi`;
+}
+
+function fitSearchRadius(center = map.getCenter()) {
+  radiusCircle.setLatLng(center).setRadius(state.radiusMiles * 1609.344);
+  map.fitBounds(radiusCircle.getBounds(), { padding: [36, 36], animate: false });
 }
 
 function distanceMiles(a, b) {
@@ -153,9 +163,30 @@ async function fetchNearbyStationCandidates(center, radiusMiles) {
   }
 
   return {
-    candidates: [...candidates.values()].sort((a, b) => a.distanceMiles - b.distanceMiles).slice(0, 28),
+    candidates: [...candidates.values()].sort((a, b) => a.distanceMiles - b.distanceMiles),
     stateCodes,
   };
+}
+
+async function settleMap(items, mapper, concurrency = 8) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        results[index] = { status: "fulfilled", value: await mapper(items[index], index) };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  }
+
+  const workerCount = Math.min(concurrency, items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  return results;
 }
 
 async function fetchPwsCandidates(center, radiusMiles, stateCodes) {
@@ -321,6 +352,7 @@ function convertToInches(quantitativeValue) {
 
 function rainTotalsFromObservations(features) {
   const observationsByHour = new Map();
+  const hourMs = 60 * 60 * 1000;
 
   for (const feature of features) {
     const properties = feature?.properties || {};
@@ -339,9 +371,17 @@ function rainTotalsFromObservations(features) {
   const referenceTime = new Date();
   const totals = {};
   for (const hours of [6, 12, 24, 48, 72]) {
-    const cutoff = referenceTime.getTime() - hours * 60 * 60 * 1000;
-    const values = [...observationsByHour.values()].filter((item) => item.timestamp.getTime() >= cutoff);
-    totals[hours] = values.length ? Number(values.reduce((sum, item) => sum + item.amount, 0).toFixed(2)) : null;
+    const windowEnd = referenceTime.getTime();
+    const windowStart = windowEnd - hours * hourMs;
+    const contributions = [...observationsByHour.values()].flatMap((item) => {
+      const reportEnd = item.timestamp.getTime();
+      const reportStart = reportEnd - hourMs;
+      const overlap = Math.min(reportEnd, windowEnd) - Math.max(reportStart, windowStart);
+      return overlap > 0 ? [item.amount * Math.min(1, overlap / hourMs)] : [];
+    });
+    totals[hours] = contributions.length
+      ? Number(contributions.reduce((sum, amount) => sum + amount, 0).toFixed(2))
+      : null;
   }
   return { totals, hasGauge: observationsByHour.size > 0 };
 }
@@ -372,24 +412,31 @@ async function refreshNoaaData() {
   refreshButton.classList.add("is-loading");
   refreshButton.firstElementChild.textContent = "↻";
   dataPanel.setAttribute("aria-busy", "true");
-  setDataState("loading", "Loading NOAA observations", "Up to 48 hours");
+  setDataState("loading", "Loading NOAA observations", "Up to 72 hours");
 
-  const results = await Promise.allSettled(stations.map(fetchStationObservations));
+  const results = await settleMap(stations, fetchStationObservations);
   const successful = results.filter((result) => result.status === "fulfilled").map((result) => result.value);
   const failures = results.length - successful.length;
 
   if (successful.length) {
     const successfulById = new Map(successful.map((station) => [station.id, station]));
     stations = stations.map((station) => successfulById.get(station.id) || station);
+    state.dataMode = "live";
     buildMarkers();
     render();
-    setDataState(
-      "live",
-      failures ? `Live NOAA · ${failures} unavailable` : "Live NOAA observations",
-      `Updated ${new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date())}`,
-    );
+    if (state.areaSearchActive) {
+      updateAreaSearchStatus();
+    } else {
+      setDataState(
+        "live",
+        failures ? `Live NOAA · ${failures} unavailable` : "Live NOAA observations",
+        `Updated ${new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date())}`,
+      );
+    }
   } else {
     stations = structuredClone(sampleStations);
+    state.dataMode = "sample";
+    state.areaSearchActive = false;
     buildMarkers();
     render();
     setDataState("error", "NOAA unavailable · sample shown", "Try again shortly");
@@ -411,6 +458,7 @@ async function searchCurrentMapArea(options = {}) {
   radiusSelect.value = String(radiusMiles);
   if (options.center) map.setView(center, map.getZoom(), { animate: false });
   updateSearchGeometry();
+  fitSearchRadius(center);
 
   areaSearchButton.disabled = true;
   refreshButton.disabled = true;
@@ -428,8 +476,10 @@ async function searchCurrentMapArea(options = {}) {
     if (!candidates.length) throw new Error("No stations were found inside this radius.");
 
     setDataState("loading", `Loading ${candidates.length} stations`, "Recent rainfall observations");
-    const results = await Promise.allSettled(candidates.map(fetchStationObservations));
+    const results = await settleMap(candidates, fetchStationObservations);
     stations = candidates.map((candidate, index) => results[index].status === "fulfilled" ? results[index].value : candidate);
+    state.dataMode = "live";
+    state.areaSearchActive = true;
     state.selectedId = stations[0].id;
     state.query = "";
     search.value = "";
@@ -437,11 +487,7 @@ async function searchCurrentMapArea(options = {}) {
     render();
     const noaaCount = stations.filter((station) => station.source !== "PWS").length;
     const pwsCount = stations.filter((station) => station.source === "PWS").length;
-    setDataState(
-      "live",
-      pwsCount ? `${noaaCount} NOAA · ${pwsCount} PWS` : `${noaaCount} nearby NWS stations`,
-      pwsCount ? `${radiusMiles} mi NOAA · ${PWS_RADIUS_MILES} mi PWS` : `${radiusMiles} mi search radius`,
-    );
+    updateAreaSearchStatus();
     return { status: "updated", stations: stations.length, noaaCount, pwsCount, radiusMiles, center: { lat: center.lat, lon: center.lng } };
   } catch (error) {
     setDataState("error", "Area search unavailable", error.message || "Try a different center or radius");
@@ -462,8 +508,20 @@ async function setPwsVisibility(enabled) {
   if (!stations.some((station) => station.id === state.selectedId)) state.selectedId = stations[0]?.id;
   buildMarkers();
   render();
-  setDataState("live", `${stations.length} nearby NWS stations`, `${state.radiusMiles} mi search radius`);
+  updateAreaSearchStatus();
   return { status: "updated", personalStationsVisible: false, stations: stations.length };
+}
+
+function updateAreaSearchStatus() {
+  if (!state.areaSearchActive) return;
+  const visibleCount = getVisibleStations().length;
+  const loadedCount = stations.length;
+  const pwsCount = stations.filter((station) => station.source === "PWS").length;
+  setDataState(
+    "live",
+    visibleCount === loadedCount ? `${loadedCount} stations shown` : `${visibleCount} of ${loadedCount} stations shown`,
+    pwsCount ? `${state.radiusMiles} mi NOAA · ${PWS_RADIUS_MILES} mi PWS` : `${state.radiusMiles} mi search radius`,
+  );
 }
 
 function renderMarkers(visible) {
@@ -524,12 +582,11 @@ function renderRows(visible) {
 function renderCard() {
   const station = stations.find((item) => item.id === state.selectedId) ?? stations[0];
   const coordinates = stationCoordinates(station);
-  const pwsRainfallLink = station.source === "PWS"
-    ? `<div class="station-data-note">
-        <span>Rain totals are not available in this feed.</span>
-        <a href="${nwsTimeSeriesUrl(station.id)}" target="_blank" rel="noopener noreferrer">View NWS rainfall history <span aria-hidden="true">↗</span></a>
-      </div>`
-    : "";
+  const stationDataNote = station.source === "PWS"
+    ? `<span>Rain totals are not available in this feed.</span>
+       <a href="${nwsTimeSeriesUrl(station.id)}" target="_blank" rel="noopener noreferrer">View NWS rainfall history <span aria-hidden="true">↗</span></a>`
+    : `<span>${state.dataMode === "sample" ? "Sample value · refresh for live totals" : "Rolling estimate ending now · NWS"}</span>
+       <a href="${nwsTimeSeriesUrl(station.id)}" target="_blank" rel="noopener noreferrer">View NWS source data <span aria-hidden="true">↗</span></a>`;
   card.innerHTML = `
     <div class="station-card-head">
       <div>
@@ -548,7 +605,7 @@ function renderCard() {
         .map((period) => `<div><span>${period} hours</span><strong>${formatRain(station.rain[period])}${station.rain[period] == null ? "" : '″'}</strong></div>`)
         .join("")}
     </div>
-    ${pwsRainfallLink}
+    <div class="station-data-note">${stationDataNote}</div>
   `;
 }
 
@@ -579,11 +636,13 @@ function fitVisibleStations() {
 search.addEventListener("input", (event) => {
   state.query = event.target.value;
   render();
+  updateAreaSearchStatus();
 });
 
 gaugeOnly.addEventListener("change", (event) => {
   state.gaugeOnly = event.target.checked;
   render();
+  updateAreaSearchStatus();
 });
 
 sortBy.addEventListener("change", (event) => {
@@ -733,3 +792,4 @@ render();
 fitVisibleStations();
 updateSearchGeometry();
 registerWebMcpTools();
+refreshNoaaData();
