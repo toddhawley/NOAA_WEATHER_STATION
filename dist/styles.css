@@ -601,6 +601,34 @@ tr:focus-visible {
   line-height: 1.45;
 }
 
+.station-coordinates {
+  margin-top: 6px;
+  display: grid;
+  gap: 2px;
+}
+
+.station-coordinates span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.station-coordinates b {
+  width: 27px;
+  color: var(--mint);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.station-coordinates code {
+  color: var(--muted-strong);
+  font-family: inherit;
+  font-size: 0.67rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .station-card-id {
   display: inline-flex;
   align-items: center;

@@ -16,4 +16,6 @@ Enable **Personal stations** to add up to 18 nearby CWOP personal weather statio
 
 When a personal station is selected, its card includes a **View NWS rainfall history** link. The link opens NOAA's nationwide Time Series Viewer using that station's CWOP identifier, where reported and accumulated precipitation can be inspected directly.
 
+Every selected-station card displays its location in both signed decimal degrees (DD) and degrees, minutes, seconds (DMS).
+
 The base map uses OpenStreetMap tiles and requires an internet connection. NOAA refreshes also require internet access. If the NOAA request is unavailable, the page keeps the sample dataset visible and reports the fallback in the header.

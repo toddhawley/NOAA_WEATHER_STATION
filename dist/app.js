@@ -222,6 +222,32 @@ function nwsTimeSeriesUrl(stationId) {
   return `https://www.weather.gov/wrh/timeseries?site=${encodeURIComponent(stationId)}`;
 }
 
+function coordinateToDms(value, positiveDirection, negativeDirection) {
+  let absolute = Math.abs(value);
+  let degrees = Math.floor(absolute);
+  let minutesDecimal = (absolute - degrees) * 60;
+  let minutes = Math.floor(minutesDecimal);
+  let seconds = Number(((minutesDecimal - minutes) * 60).toFixed(1));
+
+  if (seconds >= 60) {
+    seconds = 0;
+    minutes += 1;
+  }
+  if (minutes >= 60) {
+    minutes = 0;
+    degrees += 1;
+  }
+
+  return `${degrees}° ${minutes}′ ${seconds.toFixed(1)}″ ${value >= 0 ? positiveDirection : negativeDirection}`;
+}
+
+function stationCoordinates(station) {
+  return {
+    dd: `${station.lat.toFixed(5)}°, ${station.lon.toFixed(5)}°`,
+    dms: `${coordinateToDms(station.lat, "N", "S")}, ${coordinateToDms(station.lon, "E", "W")}`,
+  };
+}
+
 function getVisibleStations() {
   const query = state.query.trim().toLowerCase();
   return stations
@@ -482,6 +508,7 @@ function renderRows(visible) {
 
 function renderCard() {
   const station = stations.find((item) => item.id === state.selectedId) ?? stations[0];
+  const coordinates = stationCoordinates(station);
   const pwsRainfallLink = station.source === "PWS"
     ? `<div class="station-data-note">
         <span>Rain totals are not available in this feed.</span>
@@ -493,7 +520,10 @@ function renderCard() {
       <div>
         <p>${station.state} · ${station.source === "PWS" ? "Personal station · CWOP" : station.gauge ? "NOAA rain gauge reporting" : "No recent rain gauge data"}</p>
         <h2>${station.name}</h2>
-        <p>${station.lat.toFixed(3)}°, ${station.lon.toFixed(3)}°</p>
+        <div class="station-coordinates" aria-label="Station coordinates">
+          <span><b>DD</b><code>${coordinates.dd}</code></span>
+          <span><b>DMS</b><code>${coordinates.dms}</code></span>
+        </div>
       </div>
       <span class="station-card-id">${station.id}</span>
     </div>
