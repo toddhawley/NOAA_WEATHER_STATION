@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Explore NOAA weather stations and compare rainfall totals over the last 6, 12, 24, and 48 hours."
+    />
+    <title>RainScope · NOAA Station Monitor</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2308141d'/%3E%3Cpath d='M32 10C24 22 17 29 17 40a15 15 0 0030 0c0-11-7-18-15-30z' fill='%235be7c4'/%3E%3Cpath d='M25 42c2 5 8 7 13 4' fill='none' stroke='%2308141d' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://tile.openstreetmap.org" />
+    <link rel="stylesheet" href="./vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script defer src="./vendor/leaflet/leaflet.js"></script>
+    <script defer src="./app.js"></script>
+  </head>
+  <body>
+    <header class="app-bar">
+      <a class="brand" href="#" aria-label="RainScope home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>
+          <strong>RainScope</strong>
+          <small>NOAA station monitor</small>
+        </span>
+      </a>
+      <div class="status-strip" aria-label="Data status">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="data-status">Sample dataset</span>
+        <span class="status-time" id="updated-time">Updated just now</span>
+      </div>
+      <button class="refresh-button" id="refresh-button" type="button" aria-describedby="data-status">
+        <span aria-hidden="true">↻</span>
+        Refresh data
+      </button>
+    </header>
+
+    <main class="workspace">
+      <section class="map-panel" aria-label="Weather station map">
+        <div id="map" role="application" aria-label="Interactive map of NOAA weather stations"></div>
+
+        <div class="map-tools" aria-label="Map and station controls">
+          <div class="map-primary-tools">
+            <label class="search-field">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="station-search" type="search" placeholder="Find station or ID" autocomplete="off" />
+            </label>
+            <button class="locate-button" id="fit-button" type="button" title="Fit all visible stations" aria-label="Fit all visible stations">
+              ⌗
+            </button>
+          </div>
+          <div class="area-search">
+            <span class="center-symbol" aria-hidden="true">⊕</span>
+            <span class="center-copy">
+              <small>Search from map center</small>
+              <strong id="center-label">38.24, −77.55 · 50 mi</strong>
+            </span>
+            <label class="radius-select">
+              <span>Radius</span>
+              <select id="radius-select">
+                <option value="25">25 mi</option>
+                <option value="50" selected>50 mi</option>
+                <option value="100">100 mi</option>
+                <option value="150">150 mi</option>
+                <option value="200">200 mi</option>
+              </select>
+            </label>
+            <button class="area-search-button" id="area-search-button" type="button">Search this area</button>
+          </div>
+        </div>
+
+        <div class="map-center-reticle" aria-hidden="true"><span></span></div>
+
+        <div class="legend" aria-label="24 hour rainfall legend">
+          <span class="legend-title">24h rainfall</span>
+          <span><i class="rain-dot trace"></i>Trace</span>
+          <span><i class="rain-dot light"></i>0.1–0.5</span>
+          <span><i class="rain-dot moderate"></i>0.5–1.0</span>
+          <span><i class="rain-dot heavy"></i>1.0+ in</span>
+          <i class="legend-divider" aria-hidden="true"></i>
+          <span class="legend-title">Station source</span>
+          <span><i class="source-marker noaa"></i>NOAA / NWS</span>
+          <span><i class="source-marker pws"></i>PWS / CWOP</span>
+        </div>
+
+        <article class="station-card" id="station-card" aria-live="polite"></article>
+      </section>
+
+      <aside class="data-panel" aria-label="Rainfall totals">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Observed precipitation</p>
+            <h1>Rainfall matrix</h1>
+          </div>
+          <span class="station-count" id="station-count">0 stations</span>
+        </div>
+
+        <div class="panel-controls">
+          <div class="filter-toggles">
+            <label class="gauge-toggle">
+              <input id="gauge-only" type="checkbox" checked />
+              <span class="toggle-track" aria-hidden="true"><span></span></span>
+              Rain gauges only
+            </label>
+            <span class="pws-control">
+              <label class="gauge-toggle pws-toggle">
+                <input id="show-pws" type="checkbox" aria-describedby="pws-radius-note" />
+                <span class="toggle-track" aria-hidden="true"><span></span></span>
+                Personal stations
+              </label>
+              <small class="pws-radius-note" id="pws-radius-note">PWS limited to 25 mi</small>
+            </span>
+          </div>
+          <label class="sort-select">
+            <span>Sort</span>
+            <select id="sort-by">
+              <option value="24">24h rainfall</option>
+              <option value="48">48h rainfall</option>
+              <option value="72">72h rainfall</option>
+              <option value="name">Station name</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Station</th>
+                <th scope="col">6h</th>
+                <th scope="col">12h</th>
+                <th scope="col" class="active-period">24h</th>
+                <th scope="col">48h</th>
+                <th scope="col">72h</th>
+              </tr>
+            </thead>
+            <tbody id="station-rows"></tbody>
+          </table>
+          <div class="empty-state" id="empty-state" hidden>
+            <span aria-hidden="true">◌</span>
+            <strong>No matching stations</strong>
+            <p>Try a different search or show stations without gauges.</p>
+          </div>
+        </div>
+
+        <footer class="panel-footer">
+          <span><i class="gauge-symbol" aria-hidden="true"></i> Rain gauge detected</span>
+          <span title="Live totals are estimated from the latest hourly NWS observations">Values in inches · NWS/MADIS/CWOP</span>
+        </footer>
+      </aside>
+    </main>
+  </body>
+</html>
